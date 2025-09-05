@@ -1,64 +1,69 @@
 import React from 'react';
-import { CheckCircle, AlertTriangle, Info, X, Lightbulb } from 'lucide-react';
+import { CheckCircle, AlertTriangle, XCircle, X } from 'lucide-react';
 
-const FeedbackCard = ({ feedback, onClose }) => {
-  const getIcon = () => {
-    switch (feedback.sentiment) {
+export function FeedbackCard({ feedback, onClose }) {
+  const getFeedbackIcon = (type) => {
+    switch (type) {
       case 'positive':
-        return <CheckCircle className="w-5 h-5 text-accent" />;
+        return <CheckCircle className="w-5 h-5 text-success" />;
+      case 'warning':
+        return <AlertTriangle className="w-5 h-5 text-warning" />;
       case 'negative':
-        return <AlertTriangle className="w-5 h-5 text-red-400" />;
+        return <XCircle className="w-5 h-5 text-danger" />;
       default:
-        return <Info className="w-5 h-5 text-blue-400" />;
+        return <CheckCircle className="w-5 h-5 text-primary" />;
     }
   };
 
-  const getBorderColor = () => {
-    switch (feedback.sentiment) {
+  const getBorderColor = (type) => {
+    switch (type) {
       case 'positive':
-        return 'border-accent/30';
+        return 'border-success/20 bg-success/5';
+      case 'warning':
+        return 'border-warning/20 bg-warning/5';
       case 'negative':
-        return 'border-red-400/30';
+        return 'border-danger/20 bg-danger/5';
       default:
-        return 'border-blue-400/30';
+        return 'border-primary/20 bg-primary/5';
     }
   };
 
   return (
-    <div className={`glass-effect rounded-lg p-6 border-2 ${getBorderColor()} animate-slide-up`}>
-      <div className="flex items-start justify-between mb-4">
+    <div className={`card animate-slide-up border ${getBorderColor(feedback.type)}`}>
+      <div className="flex items-start justify-between mb-md">
         <div className="flex items-center space-x-2">
-          {getIcon()}
-          <h3 className="font-medium text-white">AI Trade Feedback</h3>
+          {getFeedbackIcon(feedback.type)}
+          <h3 className="font-semibold">AI Trade Analysis</h3>
         </div>
+        
         <button
           onClick={onClose}
-          className="text-white/50 hover:text-white transition-colors"
+          className="p-1 hover:bg-gray-200 rounded"
         >
           <X className="w-4 h-4" />
         </button>
       </div>
-      
-      <p className="text-white/80 mb-4">{feedback.message}</p>
-      
-      {feedback.tips && feedback.tips.length > 0 && (
-        <div className="bg-white/5 rounded-lg p-3">
-          <div className="flex items-center space-x-2 mb-2">
-            <Lightbulb className="w-4 h-4 text-yellow-400" />
-            <span className="text-sm font-medium text-white">Trading Tips</span>
+
+      {feedback.trade && (
+        <div className="bg-gray-50 rounded-md p-3 mb-md">
+          <div className="text-sm">
+            <strong>{feedback.trade.type.toUpperCase()}</strong> {feedback.trade.quantity} shares of{' '}
+            <strong>{feedback.trade.symbol}</strong> at ${feedback.trade.entryPrice.toFixed(2)}
           </div>
-          <ul className="space-y-1">
-            {feedback.tips.map((tip, index) => (
-              <li key={index} className="text-sm text-white/70 flex items-start">
-                <span className="mr-2">•</span>
-                <span>{tip}</span>
-              </li>
-            ))}
-          </ul>
         </div>
       )}
+
+      <div className="prose prose-sm">
+        <p className="text-text whitespace-pre-line">
+          {feedback.feedback}
+        </p>
+      </div>
+
+      <div className="mt-md pt-md border-t">
+        <p className="text-xs text-muted">
+          💡 This AI-powered feedback helps you improve your trading skills. Keep practicing!
+        </p>
+      </div>
     </div>
   );
-};
-
-export default FeedbackCard;
+}

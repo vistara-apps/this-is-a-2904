@@ -1,39 +1,58 @@
-import React from 'react';
-import MarketOverview from './MarketOverview';
-import TradingChart from './TradingChart';
-import TradeForm from './TradeForm';
-import TradeHistory from './TradeHistory';
-import TutorialPanel from './TutorialPanel';
+import React, { useState } from 'react';
+import { Chart } from './Chart';
+import { TradeForm } from './TradeForm';
+import { Portfolio } from './Portfolio';
+import { Watchlist } from './Watchlist';
+import { FeedbackCard } from './FeedbackCard';
+import { ScenarioPanel } from './ScenarioPanel';
+import { useTradingStore } from '../stores/tradingStore';
 
-const TradingDashboard = () => {
+export function TradingDashboard({ onTutorialTrigger }) {
+  const { selectedSymbol } = useTradingStore();
+  const [latestFeedback, setLatestFeedback] = useState(null);
+  const [activeScenario, setActiveScenario] = useState(null);
+
+  const handleTradeFeedback = (feedback) => {
+    setLatestFeedback(feedback);
+  };
+
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-      {/* Market Overview */}
-      <div className="lg:col-span-12">
-        <MarketOverview />
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-lg animate-fade-in">
+      {/* Left Sidebar - Watchlist & Scenarios */}
+      <div className="lg:col-span-3 space-y-lg">
+        <Watchlist onTutorialTrigger={onTutorialTrigger} />
+        <ScenarioPanel 
+          onScenarioStart={setActiveScenario}
+          onTutorialTrigger={onTutorialTrigger}
+        />
       </div>
-      
-      {/* Trading Chart */}
-      <div className="lg:col-span-8">
-        <TradingChart />
+
+      {/* Main Trading Area */}
+      <div className="lg:col-span-6 space-y-lg">
+        <div className="card">
+          <div className="mb-md">
+            <h2 className="text-heading">{selectedSymbol}</h2>
+            <p className="text-muted text-sm">Live Market Simulation</p>
+          </div>
+          <Chart symbol={selectedSymbol} scenario={activeScenario} />
+        </div>
+
+        {latestFeedback && (
+          <FeedbackCard 
+            feedback={latestFeedback}
+            onClose={() => setLatestFeedback(null)}
+          />
+        )}
       </div>
-      
-      {/* Trade Form */}
-      <div className="lg:col-span-4">
-        <TradeForm />
-      </div>
-      
-      {/* Trade History */}
-      <div className="lg:col-span-7">
-        <TradeHistory />
-      </div>
-      
-      {/* Tutorial Panel */}
-      <div className="lg:col-span-5">
-        <TutorialPanel />
+
+      {/* Right Sidebar - Trading & Portfolio */}
+      <div className="lg:col-span-3 space-y-lg">
+        <TradeForm 
+          onFeedback={handleTradeFeedback}
+          onTutorialTrigger={onTutorialTrigger}
+        />
+        <Portfolio onTutorialTrigger={onTutorialTrigger} />
       </div>
     </div>
   );
-};
-
-export default TradingDashboard;
+}

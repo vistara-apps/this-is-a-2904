@@ -7,14 +7,18 @@ export default {
   theme: {
     extend: {
       colors: {
-        'bg': 'hsl(210, 30%, 98%)',
-        'text': 'hsl(210, 20%, 20%)',
-        'muted': 'hsl(210, 20%, 50%)',
-        'accent': 'hsl(160, 70%, 50%)',
-        'primary': 'hsl(210, 90%, 55%)',
-        'surface': 'hsl(0, 0%, 100%)',
+        bg: 'hsl(210, 30%, 98%)',
+        text: 'hsl(210, 20%, 20%)',
+        muted: 'hsl(210, 20%, 50%)',
+        accent: 'hsl(160, 70%, 50%)',
+        primary: 'hsl(210, 90%, 55%)',
+        surface: 'hsl(0, 0%, 100%)',
+        success: 'hsl(120, 70%, 50%)',
+        danger: 'hsl(0, 70%, 55%)',
+        warning: 'hsl(45, 90%, 55%)',
       },
       borderRadius: {
+        'xs': '4px',
         'sm': '6px',
         'md': '10px',
         'lg': '16px',
@@ -41,7 +45,7 @@ export default {
           '100%': { opacity: '1' },
         },
         slideUp: {
-          '0%': { transform: 'translateY(10px)', opacity: '0' },
+          '0%': { transform: 'translateY(20px)', opacity: '0' },
           '100%': { transform: 'translateY(0)', opacity: '1' },
         },
       },
