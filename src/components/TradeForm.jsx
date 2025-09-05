@@ -1,212 +1,150 @@
 import React, { useState } from 'react';
 import { TrendingUp, TrendingDown, DollarSign } from 'lucide-react';
-import { useTradingStore } from '../stores/tradingStore';
-import { useUserStore } from '../stores/userStore';
-import { generateTradeFeedback } from '../utils/aiService';
-import { nanoid } from 'nanoid';
+import { useTrading } from '../context/TradingContext';
+import { useAuth } from '../context/AuthContext';
 
-export function TradeForm({ onFeedback, onTutorialTrigger }) {
-  const { selectedSymbol, getCurrentPrice, addPosition } = useTradingStore();
-  const { user, addTrade, updateUser } = useUserStore();
+const TradeForm = () => {
+  const { selectedSymbol, currentPrice, executeTrade, loading } = useTrading();
+  const { user } = useAuth();
   const [tradeType, setTradeType] = useState('buy');
-  const [quantity, setQuantity] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-
-  const currentPrice = getCurrentPrice(selectedSymbol);
-  const totalValue = parseFloat(quantity) * currentPrice || 0;
+  const [quantity, setQuantity] = useState(1);
+  const [error, setError] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!quantity || !user) return;
+    setError('');
 
-    setIsLoading(true);
+    if (quantity <= 0) {
+      setError('Quantity must be greater than 0');
+      return;
+    }
+
+    const totalCost = quantity * currentPrice;
+    
+    if (tradeType === 'buy' && totalCost > user.virtualBalance) {
+      setError('Insufficient virtual balance for this trade');
+      return;
+    }
 
     try {
-      const trade = {
-        tradeId: nanoid(),
-        userId: user.userId,
-        symbol: selectedSymbol,
+      await executeTrade({
         type: tradeType,
-        quantity: parseFloat(quantity),
-        entryPrice: currentPrice,
-        timestamp: new Date().toISOString(),
-        status: 'open',
-      };
-
-      // Check if user has enough balance for buy orders
-      if (tradeType === 'buy' && totalValue > user.virtualBalance) {
-        alert('Insufficient virtual balance for this trade.');
-        setIsLoading(false);
-        return;
-      }
-
-      // Add position to trading store
-      const position = {
-        id: nanoid(),
-        ...trade,
-      };
-      addPosition(position);
-
-      // Update user balance
-      const balanceChange = tradeType === 'buy' ? -totalValue : totalValue;
-      updateUser({ virtualBalance: user.virtualBalance + balanceChange });
-
-      // Generate AI feedback
-      const userContext = {
-        level: user.tradeHistory.length < 5 ? 'Beginner' : 'Intermediate',
-        tradeCount: user.tradeHistory.length,
-        totalPL: user.totalProfitLoss,
-      };
-
-      const feedback = await generateTradeFeedback(trade, userContext);
-      
-      onFeedback({
-        trade,
-        feedback,
-        type: 'positive', // Will be determined by AI analysis
+        quantity: parseInt(quantity)
       });
-
-      // Add trade to history
-      addTrade(trade);
-
+      
       // Reset form
-      setQuantity('');
-
-      // Trigger tutorial for first trade
-      if (user.tradeHistory.length === 0) {
-        setTimeout(() => {
-          onTutorialTrigger({
-            tutorialId: 'first_trade_complete',
-            title: 'First Trade Complete!',
-            contentType: 'text',
-            content: `
-              Congratulations on your first trade! You've just:
-              
-              ${tradeType === 'buy' ? '• Purchased' : '• Sold'} ${quantity} shares of ${selectedSymbol}
-              • At $${currentPrice.toFixed(2)} per share
-              • Total value: $${totalValue.toFixed(2)}
-              
-              Your AI feedback will help you understand how well you did. 
-              Watch the market and consider when to close this position!
-            `,
-          });
-        }, 2000);
-      }
-
-    } catch (error) {
-      console.error('Trade execution error:', error);
-      alert('Error executing trade. Please try again.');
-    } finally {
-      setIsLoading(false);
+      setQuantity(1);
+    } catch (err) {
+      setError(err.message);
     }
   };
 
-  return (
-    <div className="card">
-      <h3 className="text-heading mb-md">Place Order</h3>
-      
-      <form onSubmit={handleSubmit} className="space-y-md">
-        {/* Trade Type Toggle */}
-        <div className="grid grid-cols-2 gap-2">
-          <button
-            type="button"
-            onClick={() => setTradeType('buy')}
-            className={`p-3 rounded-md border transition-colors ${
-              tradeType === 'buy'
-                ? 'bg-success/10 border-success text-success'
-                : 'border-gray-200 hover:bg-gray-50'
-            }`}
-          >
-            <TrendingUp className="w-4 h-4 mx-auto mb-1" />
-            <span className="text-sm font-medium">Buy</span>
-          </button>
-          
-          <button
-            type="button"
-            onClick={() => setTradeType('sell')}
-            className={`p-3 rounded-md border transition-colors ${
-              tradeType === 'sell'
-                ? 'bg-danger/10 border-danger text-danger'
-                : 'border-gray-200 hover:bg-gray-50'
-            }`}
-          >
-            <TrendingDown className="w-4 h-4 mx-auto mb-1" />
-            <span className="text-sm font-medium">Sell</span>
-          </button>
-        </div>
+  const totalValue = quantity * currentPrice;
+  const canAfford = tradeType === 'sell' || totalValue <= user.virtualBalance;
 
-        {/* Symbol Display */}
-        <div className="bg-gray-50 rounded-md p-3">
-          <div className="text-sm text-muted mb-1">Selected Symbol</div>
-          <div className="font-semibold">{selectedSymbol}</div>
-          <div className="text-sm text-muted">
-            Current Price: ${currentPrice.toFixed(2)}
+  return (
+    <div className="bg-surface rounded-lg p-6 shadow-card">
+      <h3 className="text-lg font-semibold text-text mb-4">Place Trade</h3>
+      
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Trade Type */}
+        <div>
+          <label className="block text-sm font-medium text-text mb-2">Trade Type</label>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => setTradeType('buy')}
+              className={`flex items-center justify-center gap-2 py-3 px-4 rounded-md transition-colors ${
+                tradeType === 'buy'
+                  ? 'bg-accent text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              <TrendingUp size={16} />
+              Buy
+            </button>
+            <button
+              type="button"
+              onClick={() => setTradeType('sell')}
+              className={`flex items-center justify-center gap-2 py-3 px-4 rounded-md transition-colors ${
+                tradeType === 'sell'
+                  ? 'bg-red-500 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              <TrendingDown size={16} />
+              Sell
+            </button>
           </div>
         </div>
 
-        {/* Quantity Input */}
+        {/* Symbol Display */}
         <div>
-          <label className="block text-sm font-medium mb-2">
-            Quantity (Shares)
-          </label>
+          <label className="block text-sm font-medium text-text mb-2">Symbol</label>
+          <div className="bg-gray-50 p-3 rounded-md">
+            <span className="font-medium">{selectedSymbol}</span>
+            <span className="text-muted ml-2">${currentPrice.toFixed(2)}</span>
+          </div>
+        </div>
+
+        {/* Quantity */}
+        <div>
+          <label className="block text-sm font-medium text-text mb-2">Quantity</label>
           <input
             type="number"
+            min="1"
             value={quantity}
             onChange={(e) => setQuantity(e.target.value)}
-            className="input"
-            placeholder="Enter number of shares"
-            min="1"
-            step="1"
+            className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+            placeholder="Enter quantity"
             required
           />
         </div>
 
         {/* Order Summary */}
-        {quantity && (
-          <div className="bg-gray-50 rounded-md p-3 space-y-2">
-            <div className="flex justify-between text-sm">
-              <span>Shares:</span>
-              <span>{quantity}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span>Price per share:</span>
-              <span>${currentPrice.toFixed(2)}</span>
-            </div>
-            <div className="flex justify-between font-semibold border-t pt-2">
-              <span>Total Value:</span>
-              <span>${totalValue.toFixed(2)}</span>
-            </div>
+        <div className="bg-gray-50 p-4 rounded-md space-y-2">
+          <div className="flex justify-between text-sm">
+            <span className="text-muted">Price per share:</span>
+            <span className="text-text">${currentPrice.toFixed(2)}</span>
+          </div>
+          <div className="flex justify-between text-sm">
+            <span className="text-muted">Quantity:</span>
+            <span className="text-text">{quantity}</span>
+          </div>
+          <div className="flex justify-between font-medium border-t border-gray-200 pt-2">
+            <span className="text-text">Total {tradeType === 'buy' ? 'Cost' : 'Proceeds'}:</span>
+            <span className={`${canAfford ? 'text-text' : 'text-red-500'}`}>
+              ${totalValue.toFixed(2)}
+            </span>
+          </div>
+        </div>
+
+        {/* Balance Check */}
+        <div className="flex items-center justify-between text-sm">
+          <span className="text-muted">Available Balance:</span>
+          <span className="text-text">${user.virtualBalance.toLocaleString()}</span>
+        </div>
+
+        {error && (
+          <div className="text-red-600 text-sm bg-red-50 p-3 rounded-md">
+            {error}
           </div>
         )}
 
-        {/* Submit Button */}
         <button
           type="submit"
-          disabled={!quantity || isLoading}
-          className={`w-full py-3 rounded-md font-medium transition-colors ${
+          disabled={loading || !canAfford}
+          className={`w-full py-3 rounded-md font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
             tradeType === 'buy'
-              ? 'bg-success hover:bg-success/90 text-white'
-              : 'bg-danger hover:bg-danger/90 text-white'
-          } disabled:opacity-50 disabled:cursor-not-allowed`}
+              ? 'bg-accent hover:bg-accent/90 text-white'
+              : 'bg-red-500 hover:bg-red-600 text-white'
+          }`}
         >
-          {isLoading ? (
-            'Processing...'
-          ) : (
-            <>
-              <DollarSign className="w-4 h-4 inline mr-2" />
-              {tradeType === 'buy' ? 'Buy' : 'Sell'} {selectedSymbol}
-            </>
-          )}
+          {loading ? 'Executing...' : `${tradeType === 'buy' ? 'Buy' : 'Sell'} ${selectedSymbol}`}
         </button>
       </form>
-
-      {/* Balance Info */}
-      {user && (
-        <div className="mt-md pt-md border-t">
-          <div className="text-sm text-muted mb-1">Available Balance</div>
-          <div className="font-semibold">${user.virtualBalance.toLocaleString()}</div>
-        </div>
-      )}
     </div>
   );
-}
+};
+
+export default TradeForm;

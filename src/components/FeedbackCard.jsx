@@ -1,69 +1,96 @@
 import React from 'react';
-import { CheckCircle, AlertTriangle, XCircle, X } from 'lucide-react';
+import { X, Brain, TrendingUp, AlertTriangle, CheckCircle } from 'lucide-react';
 
-export function FeedbackCard({ feedback, onClose }) {
-  const getFeedbackIcon = (type) => {
-    switch (type) {
+const FeedbackCard = ({ feedback, onClose, onShowTutorial }) => {
+  if (!feedback) return null;
+
+  const getIcon = () => {
+    switch (feedback.type) {
       case 'positive':
-        return <CheckCircle className="w-5 h-5 text-success" />;
-      case 'warning':
-        return <AlertTriangle className="w-5 h-5 text-warning" />;
+        return <CheckCircle className="text-accent" size={24} />;
       case 'negative':
-        return <XCircle className="w-5 h-5 text-danger" />;
+        return <AlertTriangle className="text-red-500" size={24} />;
       default:
-        return <CheckCircle className="w-5 h-5 text-primary" />;
+        return <Brain className="text-primary" size={24} />;
     }
   };
 
-  const getBorderColor = (type) => {
-    switch (type) {
+  const getBorderColor = () => {
+    switch (feedback.type) {
       case 'positive':
-        return 'border-success/20 bg-success/5';
-      case 'warning':
-        return 'border-warning/20 bg-warning/5';
+        return 'border-accent';
       case 'negative':
-        return 'border-danger/20 bg-danger/5';
+        return 'border-red-500';
       default:
-        return 'border-primary/20 bg-primary/5';
+        return 'border-primary';
     }
   };
 
   return (
-    <div className={`card animate-slide-up border ${getBorderColor(feedback.type)}`}>
-      <div className="flex items-start justify-between mb-md">
-        <div className="flex items-center space-x-2">
-          {getFeedbackIcon(feedback.type)}
-          <h3 className="font-semibold">AI Trade Analysis</h3>
+    <div className={`bg-surface rounded-lg p-6 shadow-card border-l-4 ${getBorderColor()}`}>
+      <div className="flex items-start justify-between mb-4">
+        <div className="flex items-center gap-3">
+          {getIcon()}
+          <h3 className="text-lg font-semibold text-text">AI Trade Analysis</h3>
         </div>
-        
         <button
           onClick={onClose}
-          className="p-1 hover:bg-gray-200 rounded"
+          className="text-muted hover:text-text transition-colors"
         >
-          <X className="w-4 h-4" />
+          <X size={20} />
         </button>
       </div>
 
-      {feedback.trade && (
-        <div className="bg-gray-50 rounded-md p-3 mb-md">
-          <div className="text-sm">
-            <strong>{feedback.trade.type.toUpperCase()}</strong> {feedback.trade.quantity} shares of{' '}
-            <strong>{feedback.trade.symbol}</strong> at ${feedback.trade.entryPrice.toFixed(2)}
-          </div>
+      <div className="space-y-4">
+        <div>
+          <h4 className="font-medium text-text mb-2">Decision Analysis</h4>
+          <p className="text-muted text-sm leading-relaxed">{feedback.analysis}</p>
         </div>
-      )}
 
-      <div className="prose prose-sm">
-        <p className="text-text whitespace-pre-line">
-          {feedback.feedback}
-        </p>
-      </div>
+        {feedback.suggestions && feedback.suggestions.length > 0 && (
+          <div>
+            <h4 className="font-medium text-text mb-2">Recommendations</h4>
+            <ul className="space-y-1">
+              {feedback.suggestions.map((suggestion, index) => (
+                <li key={index} className="text-muted text-sm flex items-start gap-2">
+                  <span className="text-primary mt-1">•</span>
+                  {suggestion}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
-      <div className="mt-md pt-md border-t">
-        <p className="text-xs text-muted">
-          💡 This AI-powered feedback helps you improve your trading skills. Keep practicing!
-        </p>
+        {feedback.riskLevel && (
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-text">Risk Level:</span>
+            <span className={`px-2 py-1 rounded text-xs font-medium ${
+              feedback.riskLevel === 'low' ? 'bg-accent bg-opacity-20 text-accent' :
+              feedback.riskLevel === 'medium' ? 'bg-yellow-100 text-yellow-600' :
+              'bg-red-100 text-red-600'
+            }`}>
+              {feedback.riskLevel.toUpperCase()}
+            </span>
+          </div>
+        )}
+
+        <div className="flex gap-3 pt-2 border-t border-gray-200">
+          <button
+            onClick={onShowTutorial}
+            className="flex-1 bg-primary hover:bg-primary/90 text-white py-2 px-4 rounded-md text-sm font-medium transition-colors"
+          >
+            Learn More
+          </button>
+          <button
+            onClick={onClose}
+            className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 px-4 rounded-md text-sm font-medium transition-colors"
+          >
+            Got It
+          </button>
+        </div>
       </div>
     </div>
   );
-}
+};
+
+export default FeedbackCard;

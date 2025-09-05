@@ -1,58 +1,76 @@
 import React, { useState } from 'react';
-import { Chart } from './Chart';
-import { TradeForm } from './TradeForm';
-import { Portfolio } from './Portfolio';
-import { Watchlist } from './Watchlist';
-import { FeedbackCard } from './FeedbackCard';
-import { ScenarioPanel } from './ScenarioPanel';
-import { useTradingStore } from '../stores/tradingStore';
+import TradingChart from './TradingChart';
+import TradeForm from './TradeForm';
+import Portfolio from './Portfolio';
+import FeedbackCard from './FeedbackCard';
+import TutorialModal from './TutorialModal';
+import ScenarioPanel from './ScenarioPanel';
+import { useTrading } from '../context/TradingContext';
 
-export function TradingDashboard({ onTutorialTrigger }) {
-  const { selectedSymbol } = useTradingStore();
-  const [latestFeedback, setLatestFeedback] = useState(null);
-  const [activeScenario, setActiveScenario] = useState(null);
+const TradingDashboard = () => {
+  const { feedback, setFeedback } = useTrading();
+  const [showTutorial, setShowTutorial] = useState(false);
+  const [activeTab, setActiveTab] = useState('trading');
 
-  const handleTradeFeedback = (feedback) => {
-    setLatestFeedback(feedback);
-  };
+  const tabs = [
+    { id: 'trading', label: 'Trading' },
+    { id: 'portfolio', label: 'Portfolio' },
+    { id: 'scenarios', label: 'Practice Scenarios' }
+  ];
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-lg animate-fade-in">
-      {/* Left Sidebar - Watchlist & Scenarios */}
-      <div className="lg:col-span-3 space-y-lg">
-        <Watchlist onTutorialTrigger={onTutorialTrigger} />
-        <ScenarioPanel 
-          onScenarioStart={setActiveScenario}
-          onTutorialTrigger={onTutorialTrigger}
-        />
+    <div className="max-w-6xl mx-auto px-5 py-6">
+      {/* Navigation Tabs */}
+      <div className="flex space-x-1 mb-6 bg-surface bg-opacity-80 rounded-lg p-1">
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+              activeTab === tab.id
+                ? 'bg-primary text-white'
+                : 'text-muted hover:text-text'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
       </div>
 
-      {/* Main Trading Area */}
-      <div className="lg:col-span-6 space-y-lg">
-        <div className="card">
-          <div className="mb-md">
-            <h2 className="text-heading">{selectedSymbol}</h2>
-            <p className="text-muted text-sm">Live Market Simulation</p>
+      {activeTab === 'trading' && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Main Trading Area */}
+          <div className="lg:col-span-2 space-y-6">
+            <TradingChart />
+            {feedback && (
+              <FeedbackCard 
+                feedback={feedback} 
+                onClose={() => setFeedback(null)}
+                onShowTutorial={() => setShowTutorial(true)}
+              />
+            )}
           </div>
-          <Chart symbol={selectedSymbol} scenario={activeScenario} />
+
+          {/* Trading Form */}
+          <div className="space-y-6">
+            <TradeForm />
+          </div>
         </div>
+      )}
 
-        {latestFeedback && (
-          <FeedbackCard 
-            feedback={latestFeedback}
-            onClose={() => setLatestFeedback(null)}
-          />
-        )}
-      </div>
+      {activeTab === 'portfolio' && (
+        <Portfolio />
+      )}
 
-      {/* Right Sidebar - Trading & Portfolio */}
-      <div className="lg:col-span-3 space-y-lg">
-        <TradeForm 
-          onFeedback={handleTradeFeedback}
-          onTutorialTrigger={onTutorialTrigger}
-        />
-        <Portfolio onTutorialTrigger={onTutorialTrigger} />
-      </div>
+      {activeTab === 'scenarios' && (
+        <ScenarioPanel />
+      )}
+
+      {showTutorial && (
+        <TutorialModal onClose={() => setShowTutorial(false)} />
+      )}
     </div>
   );
-}
+};
+
+export default TradingDashboard;

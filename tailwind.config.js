@@ -13,12 +13,9 @@ export default {
         accent: 'hsl(160, 70%, 50%)',
         primary: 'hsl(210, 90%, 55%)',
         surface: 'hsl(0, 0%, 100%)',
-        success: 'hsl(120, 70%, 50%)',
-        danger: 'hsl(0, 70%, 55%)',
-        warning: 'hsl(45, 90%, 55%)',
       },
       borderRadius: {
-        'xs': '4px',
+        'xs': '2px',
         'sm': '6px',
         'md': '10px',
         'lg': '16px',
@@ -34,20 +31,6 @@ export default {
       },
       boxShadow: {
         'card': '0 4px 12px hsla(210, 30%, 20%, 0.1)',
-      },
-      animation: {
-        'fade-in': 'fadeIn 200ms ease-out',
-        'slide-up': 'slideUp 350ms ease-out',
-      },
-      keyframes: {
-        fadeIn: {
-          '0%': { opacity: '0' },
-          '100%': { opacity: '1' },
-        },
-        slideUp: {
-          '0%': { transform: 'translateY(20px)', opacity: '0' },
-          '100%': { transform: 'translateY(0)', opacity: '1' },
-        },
       },
     },
   },
