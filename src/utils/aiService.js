@@ -1,5 +1,77 @@
-// Mock AI service - In production, this would use OpenAI API
+// Enhanced AI service with OpenAI integration
+import OpenAI from 'openai';
+
+// Initialize OpenAI client
+const openai = new OpenAI({
+  apiKey: import.meta.env.VITE_OPENAI_API_KEY,
+  dangerouslyAllowBrowser: true
+});
+
 export const getAIFeedback = async (trade, marketData) => {
+  // If no API key is provided, fall back to mock service
+  if (!import.meta.env.VITE_OPENAI_API_KEY || import.meta.env.VITE_OPENAI_API_KEY === 'your_openai_api_key_here') {
+    return getMockFeedback(trade, marketData);
+  }
+
+  try {
+    const { type, symbol, quantity, entryPrice, exitPrice, profitLoss } = trade;
+    const { price: currentPrice, changePercent, volume } = marketData;
+    
+    const positionValue = quantity * entryPrice;
+    const isClosedTrade = exitPrice !== null;
+    
+    const prompt = `Analyze this ${isClosedTrade ? 'completed' : 'open'} trade and provide constructive feedback:
+
+Trade Details:
+- Action: ${type.toUpperCase()} ${quantity} shares of ${symbol}
+- Entry Price: $${entryPrice}
+${isClosedTrade ? `- Exit Price: $${exitPrice}` : ''}
+${isClosedTrade ? `- Profit/Loss: $${profitLoss.toFixed(2)}` : ''}
+- Position Value: $${positionValue.toFixed(2)}
+
+Market Context:
+- Current Price: $${currentPrice}
+- Price Change: ${changePercent.toFixed(2)}%
+- Volume: ${volume?.toLocaleString() || 'N/A'}
+
+Please provide feedback in JSON format with these fields:
+- type: "positive", "neutral", or "negative"
+- analysis: A detailed analysis of the trade timing and decision (2-3 sentences)
+- suggestions: Array of 2-4 actionable suggestions for improvement
+- riskLevel: "low", "medium", or "high"
+- marketCondition: Brief description of market conditions
+- confidence: Number between 70-100 representing confidence in the analysis
+
+Focus on educational value and constructive guidance for a learning trader.`;
+
+    const completion = await openai.chat.completions.create({
+      model: "gpt-3.5-turbo",
+      messages: [
+        {
+          role: "system",
+          content: "You are an expert trading coach providing educational feedback to help traders improve their skills. Always be constructive and focus on learning opportunities."
+        },
+        {
+          role: "user",
+          content: prompt
+        }
+      ],
+      temperature: 0.7,
+      max_tokens: 500
+    });
+
+    const response = completion.choices[0].message.content;
+    return JSON.parse(response);
+    
+  } catch (error) {
+    console.error('OpenAI API error:', error);
+    // Fall back to mock service if API fails
+    return getMockFeedback(trade, marketData);
+  }
+};
+
+// Mock feedback service as fallback
+const getMockFeedback = async (trade, marketData) => {
   // Simulate API delay
   await new Promise(resolve => setTimeout(resolve, 1000));
 
